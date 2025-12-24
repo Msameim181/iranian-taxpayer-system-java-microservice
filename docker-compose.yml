@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Tax Collect Data Microservice
+  tax-microservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tax-collect-data-sdk:2.0.28
+    container_name: tax-microservice
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount keys directory (read-only for security)
+      - ./keys:/app/keys:ro
+      # Mount logs for persistence
+      - tax-logs:/app/logs
+    environment:
+      # Tax API Configuration
+      TAX_API_BASE_URL: ${TAX_API_BASE_URL:-https://tp.tax.gov.ir/requestsmanager}
+      TAX_MEMORY_ID: ${TAX_MEMORY_ID}
+      TAX_PRIVATE_KEY_PATH: /app/keys/private.pem
+      TAX_CERTIFICATE_PATH: /app/keys/certificate.cer
+      # JVM Options
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+      # Timezone
+      TZ: Asia/Tehran
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - tax-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Example: Your business service that uses tax microservice
+  # Uncomment and modify as needed
+  # your-service:
+  #   image: your-service:latest
+  #   container_name: your-service
+  #   depends_on:
+  #     tax-microservice:
+  #       condition: service_healthy
+  #   environment:
+  #     TAX_SERVICE_URL: http://tax-microservice:8080
+  #   networks:
+  #     - tax-network
+
+networks:
+  tax-network:
+    driver: bridge
+    name: tax-network
+
+volumes:
+  tax-logs:
+    name: tax-logs

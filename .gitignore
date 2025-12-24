@@ -1,0 +1,12 @@
+*.iml
+.idea
+target
+**/.flattened-pom.xml
+/.flattened-pom.xml
+.vscode/
+*.crt
+*.key
+*.pem
+*.cer
+*.env
+.DS_Store

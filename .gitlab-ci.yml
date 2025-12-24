@@ -1,0 +1,64 @@
+image:  $DOCKER_REGISTRY/maven:3.6.3-adoptopenjdk-11
+
+cache:
+  paths:
+    - .m2/repository
+
+stages:
+  - maven-test
+  - maven-deploy
+
+
+maven-test:
+  stage: maven-test
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
+  script:
+    - echo $MAVEN_USERNAME
+    - echo "<settings>
+      <servers>
+      <server>
+      <id>$MAVEN_REPO_ID</id>
+      <username>$MAVEN_USERNAME</username>
+      <password>$MAVEN_PASSWORD</password>
+      </server>
+      </servers>
+      <mirrors>
+      <mirror>
+      <id>$MAVEN_REPO_ID</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Paz Internal Repo</name>
+      <url>$MAVEN_URL</url>
+      </mirror>
+      </mirrors>
+      </settings>"  > ~/.m2/settings.xml
+    - cat ~/.m2/settings.xml
+    - mvn clean test -PthinJar
+
+maven-deploy:
+  stage: maven-deploy
+  allow_failure: true
+  script:
+    - echo $MAVEN_USERNAME
+    - echo "<settings>
+      <servers>
+      <server>
+      <id>$MAVEN_REPO_ID</id>
+      <username>$MAVEN_USERNAME</username>
+      <password>$MAVEN_PASSWORD</password>
+      </server>
+      </servers>
+      <mirrors>
+      <mirror>
+      <id>$MAVEN_REPO_ID</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Paz Internal Repo</name>
+      <url>$MAVEN_URL</url>
+      </mirror>
+      </mirrors>
+      </settings>"  > ~/.m2/settings.xml
+    - cat ~/.m2/settings.xml
+    - mvn clean deploy -PthinJar

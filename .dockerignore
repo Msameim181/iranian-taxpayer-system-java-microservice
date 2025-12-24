@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+*.iml
+.vscode
+*.swp
+*.swo
+
+# Build outputs
+target/
+build/
+*.class
+*.jar
+!src/
+
+# Documentation (not needed in image)
+docs/
+*.md
+!README.md
+
+# Keys and secrets (mount at runtime)
+keys/
+*.pem
+*.cer
+*.p12
+*.jks
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Test files
+src/test/
+
+# CI/CD
+.gitlab-ci.yml
+.github/
+
+# Monitoring configs (mount at runtime)
+monitoring/
+nginx/

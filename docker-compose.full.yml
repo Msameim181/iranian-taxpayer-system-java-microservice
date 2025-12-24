@@ -1,0 +1,191 @@
+version: '3.8'
+
+# Full stack deployment with monitoring and message queue
+# Use: docker-compose -f docker-compose.full.yml up -d
+
+services:
+  # ===========================================
+  # Tax Collect Data Microservice
+  # ===========================================
+  tax-microservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tax-collect-data-sdk:2.0.28
+    container_name: tax-microservice
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keys:/app/keys:ro
+      - tax-logs:/app/logs
+    environment:
+      TAX_API_BASE_URL: ${TAX_API_BASE_URL:-https://tp.tax.gov.ir/requestsmanager}
+      TAX_MEMORY_ID: ${TAX_MEMORY_ID}
+      TAX_PRIVATE_KEY_PATH: /app/keys/private.pem
+      TAX_CERTIFICATE_PATH: /app/keys/certificate.cer
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+      TZ: Asia/Tehran
+      # Database (if using)
+      # DATABASE_URL: jdbc:postgresql://postgres:5432/taxdb
+      # Message Queue (if using)
+      # RABBITMQ_HOST: rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - tax-network
+    depends_on:
+      - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================
+  # Redis - For caching encryption keys
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: tax-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+  # ===========================================
+  # PostgreSQL - For storing invoice records
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: tax-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: taxdb
+      POSTGRES_USER: ${POSTGRES_USER:-taxuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taxpassword}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taxuser -d taxdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+  # ===========================================
+  # RabbitMQ - For async invoice processing
+  # ===========================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: tax-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-taxuser}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-taxpassword}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+  # ===========================================
+  # Prometheus - Metrics collection
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tax-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+  # ===========================================
+  # Grafana - Dashboards and visualization
+  # ===========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tax-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+  # ===========================================
+  # Nginx - API Gateway / Reverse Proxy
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: tax-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - tax-microservice
+    restart: unless-stopped
+    networks:
+      - tax-network
+
+networks:
+  tax-network:
+    driver: bridge
+    name: tax-network
+
+volumes:
+  tax-logs:
+    name: tax-logs
+  redis-data:
+    name: tax-redis-data
+  postgres-data:
+    name: tax-postgres-data
+  rabbitmq-data:
+    name: tax-rabbitmq-data
+  prometheus-data:
+    name: tax-prometheus-data
+  grafana-data:
+    name: tax-grafana-data
