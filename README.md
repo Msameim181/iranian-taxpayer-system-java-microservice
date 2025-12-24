@@ -10,7 +10,7 @@ A comprehensive Java SDK for seamless integration with the Iranian Tax Collectio
 
 References: 
 1. [بسته توسعه نرم افزار(SDK) به زبان جاوا(نسخه باگواهی امضاء) شهریورماه 1404](https://www.intamedia.ir/%D8%A8%D8%B3%D8%AA%D9%87-%D8%AA%D9%88%D8%B3%D8%B9%D9%87-%D9%86%D8%B1%D9%85-%D8%A7%D9%81%D8%B2%D8%A7%D8%B1sdk-%D8%A8%D9%87-%D8%B2%D8%A8%D8%A7%D9%86-%D8%AC%D8%A7%D9%88%D8%A7%D9%86%D8%B3%D8%AE%D9%87-%D9%82%D8%AF%DB%8C%D9%85-%D8%A8%D8%A7%DA%AF%D9%88%D8%A7%D9%87%DB%8C-%D8%A7%D9%85%D8%B6%D8%A7-%D8%A8%D9%87%D9%85%D9%86-%D9%85%D8%A7%D9%871403)
-2. [پایانه های فروشگاهی و سامانه مودیان](hhttps://www.intamedia.ir/Law-of-store-terminals-and-taxpayer-system#226989--------)
+2. [پایانه های فروشگاهی و سامانه مودیان](https://www.intamedia.ir/Law-of-store-terminals-and-taxpayer-system#226989--------)
 3. [سازمان امور مالیاتی کشور](http://www.intamedia.ir/)
 
 ## 📋 Table of Contents
