@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: tax-microservice
+
+# Tax API Configuration
+tax:
+  api:
+    base-url: ${TAX_API_BASE_URL:https://tp.tax.gov.ir/requestsmanager}
+    memory-id: ${TAX_MEMORY_ID}
+    private-key-path: ${TAX_PRIVATE_KEY_PATH:/app/keys/private.pem}
+    certificate-path: ${TAX_CERTIFICATE_PATH:/app/keys/certificate.cer}
+
+# Actuator endpoints for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    root: INFO
+    ir.gov.tax.tpis.sdk: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
